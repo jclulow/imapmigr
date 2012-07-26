@@ -1,0 +1,18 @@
+#!/bin/ksh
+
+# If you want to run the code under Maven directly (without creating and
+#  extracting an assembly) then use this!
+
+export JAVA_HOME="${JAVA_HOME:-/usr}"
+
+echo "args: '$@'"
+
+export MAVEN_OPTS=" \
+  -XX:+UseCompressedOops \
+  -XX:+AggressiveOpts \
+  -Xmx1024m \
+"
+
+mvn -e exec:java -Dexec.mainClass=org.sysmgr.imapmigr.Main -Dexec.args="$*"
+
+stty sane
