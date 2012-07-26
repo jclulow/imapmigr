@@ -24,17 +24,6 @@ public class IMAPUtils
     return src;
   }
   
-  // XXX TODO - Get this from properties file:
-  private static boolean mirrorSkip(String name) {
-    if (name.equalsIgnoreCase("INBOX")
-      || name.equalsIgnoreCase("TRASH")
-      || name.equalsIgnoreCase("DRAFTS")
-      || name.equalsIgnoreCase("SENT")
-      || name.equalsIgnoreCase("SHARED FOLDERS"))
-      return true;
-    return false;
-  }
-
   public static JsonObject getInfoJSON(IMAPMessage m)
   {
     try {
