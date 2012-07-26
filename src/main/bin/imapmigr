@@ -1,0 +1,28 @@
+#!/bin/ksh
+
+DIR="$(dirname $(whence $0))/.."
+CMD="$(basename $0)"
+cd "$DIR" || exit 1
+
+CONFIG_FILE=${CONFIG_FILE:-config/config.properties}
+JAVA_HOME=${JAVA_HOME:-/usr}
+CLASSPATH="config:classes"
+
+for f in lib/*.jar; do
+  [[ -f "$f" ]] && CLASSPATH="$CLASSPATH:$f"
+done
+export CLASSPATH
+
+case "$CMD" in
+  imapmigr) 
+    STARTCLASS="org.sysmgr.imapmigr.Main"
+    JAVA_OPTS="-Xmx256m -server"
+    ;;
+  *)
+    echo "Unknown command: $CMD. Aborting."
+    exit 111
+    ;;
+esac
+
+exec "$JAVA_HOME/bin/java" -classpath "$CLASSPATH" $JAVA_OPTS \
+  "$STARTCLASS" -p "$CONFIG_FILE" "$@"
