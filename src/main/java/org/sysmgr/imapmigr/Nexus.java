@@ -1,13 +1,15 @@
 package org.sysmgr.imapmigr;
 
 import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.io.FileUtils;
 
 public class Nexus
 {
   private Properties config;
   private MigrationTrackingStore mts;
-  private List<String> accountList;
+  private Map<String, AccountListLine> accountList;
 
   public String ps(String name)
   {
@@ -53,10 +55,26 @@ public class Nexus
     return mts;
   }
 
-  public List<String> getAccountList()
+  public Map<String, AccountListLine> getAccountList()
   {
     if (accountList == null) {
-      accountList = FileUtils.readLines(new File(ps("accountsfile")));
+      accountList = new HashMap<String, AccountListLine>();
+      LineIterator i = FileUtils.lineIterator(new File(ps("accountsfile")));
+      while (i.hasNext()) {
+        try {
+          AccountListLine all = new AccountListLine(i.nextLine());
+          if (accountList.containsKey(all.canonicalUsername))
+            throw new RuntimeException("Duplicate username ("
+              + all.canonicalUsername + ") in account list file.");
+          accountList.put(all.canonicalUsername, all);
+        } catch (AccountListLine.EmptyLine el) {
+          // ignore empty or comment lines
+        } catch (Exception e) {
+          throw new RuntimeException("Could not read account list file", e);
+        }
+      }
+      if (accountList.size() < 1)
+        throw new RuntimeException("Account list file contained no entries.");
     }
     return accountList;
   }

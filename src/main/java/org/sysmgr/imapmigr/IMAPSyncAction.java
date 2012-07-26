@@ -22,6 +22,7 @@ public class IMAPSyncAction implements Action
     String canonUser;
     IMAPSync.ServerDetails src;
     IMAPSync.ServerDetails dst;
+    private Nexus n;
 
     private static IMAPSync.ServerDetails mkDetails(String pfx, String username)
     {
@@ -31,6 +32,7 @@ public class IMAPSyncAction implements Action
     }
 
     CredentialPair(Nexus n, String canonUser, String srcuser, String dstuser) {
+      this.n = n;
       username = canonUser;
       src = mkDetails("src", srcuser);
       dst = mkDetails("dst", dstuser);
@@ -42,7 +44,7 @@ public class IMAPSyncAction implements Action
   private int maxThreads;
   private Nexus n;
   private MigrationTrackingStore mts;
-  private List<String> al;
+  private Map<String, AccountListLine> al;
 
   private final Object mutex = new Object();
   private PrintWriter globalLog;
@@ -63,12 +65,7 @@ public class IMAPSyncAction implements Action
     Runtime.getRuntime().addShutdownHook(new SDHook());
   }
 
-  public void enqueueAccountId(String srcuser, String dstuser)
-  {
-    enqueueAccountId(new CredentialPair(n, accountId, password));
-  }
-
-  public void enqueueAccountId(CredentialPair t)
+  public void enqueueAccount(CredentialPair t)
   {
     if (closing)
       return;
@@ -133,45 +130,36 @@ public class IMAPSyncAction implements Action
   {
     Map<String, String> pairs = new HashMap<String, String>();
     int i = 0;
+
+    globalLog.println("MAIN: Scheduling migrations ...");
+
     if (accountIds != null) {
       globalLog.println("MAIN: Using arguments to restrict which accounts "
         + " from the account file are migrated.");
-    }
-    for (String s: al) {
-    }
-
-    for (String s: accountIds) {
-        pairs.put(s, ensyst.getMostRecentPassword(s));
-        i++;
-        System.err.print(".");
+      // preflight check:
+      for (String aci: accountIds) {
+        if (!al.containsKey(aci))
+          throw new RuntimeException("Could not find account '" + aci + "' in"
+            + " account list file.");
       }
     } else {
-      globalLog.println("MAIN: Fetching accounts for migration scheduling ...");
-      Iterator<EnsystStatusRecord> ia = ensyst.iterateStatusRecords(false,
-        true, 1);
-      while (ia.hasNext() && !closing) {
-        EnsystStatusRecord esr = ia.next();
-        if (mts.isUserDone(esr.getLiveId()))
-          continue;
-        if (esr.getEventTypeId() == 1 || esr.getEventTypeId() == 3) {
-          if (esr.getStatus().equals("0"))
-            // Update our current picture of this user...
-            pairs.put(esr.getLiveId(), esr.getPassword());
-        }
-        if (++i % 10000 == 0)
-          System.err.print(".");
-      }
+      globalLog.println("MAIN: Processing all accounts in account list file.");
     }
-    System.err.println();
-    
-    globalLog.println("MAIN: Scheduling migrations ...");
-    for (Map.Entry<String, String> e : pairs.entrySet()) {
-      System.err.print(">");
-      enqueueAccountId(e.getKey(), e.getValue());
+
+    // enqueue the work:
+    for (AccountListLine all: al.values()) {
+      if (accountIds != null && !accountIds.contains(all.canonicalUsername))
+        continue;
+      CredentialPair cp = new CredentialPair(n, all.canonicalUsername,
+        all.srcUsername, all.dstUsername);
+      enqueueAccount(cp);
+      i++;
     }
-    globalLog.println("MAIN: Finished scheduling " + pairs.size()
+
+    globalLog.println("MAIN: Finished scheduling " + i
       + " accounts for migration, waiting for queue exhaustion...");
     waitForSteadyStateEnd();
+
     globalLog.println("MAIN: All threads terminated, ending action.");
     Utils.closeQuietly(globalLog);
   }
