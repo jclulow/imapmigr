@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Properties;
 import java.util.zip.GZIPInputStream;
+import com.sun.mail.imap.IMAPStore;
 
 public class Utils
 {
@@ -61,6 +62,15 @@ public class Utils
         }
         break;
       }
+    }
+  }
+
+  public static void closeQuietly(IMAPStore c)
+  {
+    try {
+      if (c != null)
+        c.close();
+    } catch (Throwable t) {
     }
   }
 

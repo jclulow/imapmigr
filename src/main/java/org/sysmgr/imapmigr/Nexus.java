@@ -3,7 +3,10 @@ package org.sysmgr.imapmigr;
 import java.util.Properties;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.File;
+import java.io.IOException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 
 public class Nexus
 {
@@ -59,7 +62,12 @@ public class Nexus
   {
     if (accountList == null) {
       accountList = new HashMap<String, AccountListLine>();
-      LineIterator i = FileUtils.lineIterator(new File(ps("accountsfile")));
+      LineIterator i;
+      try {
+        i = FileUtils.lineIterator(new File(ps("accountsfile")));
+      } catch (IOException ioe) {
+        throw new RuntimeException("Could not read account list file", ioe);
+      }
       while (i.hasNext()) {
         try {
           AccountListLine all = new AccountListLine(i.nextLine());

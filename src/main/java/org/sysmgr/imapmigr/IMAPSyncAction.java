@@ -19,23 +19,21 @@ public class IMAPSyncAction implements Action
 {
   private class CredentialPair
   {
-    String canonUser;
-    IMAPSync.ServerDetails src;
-    IMAPSync.ServerDetails dst;
-    private Nexus n;
+    public String username;
+    public IMAPSync.ServerDetails src;
+    public IMAPSync.ServerDetails dst;
 
-    private static IMAPSync.ServerDetails mkDetails(String pfx, String username)
+    private IMAPSync.ServerDetails mkDetails(String pfx, String username)
     {
       String un = n.ps(pfx + ".userpattern").replaceAll("%%USER%%", username);
       return new IMAPSync.ServerDetails(n.ps(pfx + ".hostname"), un,
         n.ps(pfx + ".password"), n.pb(pfx + ".usessl"));
     }
 
-    CredentialPair(Nexus n, String canonUser, String srcuser, String dstuser) {
-      this.n = n;
-      username = canonUser;
-      src = mkDetails("src", srcuser);
-      dst = mkDetails("dst", dstuser);
+    CredentialPair(String canonUser, String srcuser, String dstuser) {
+      this.username = canonUser;
+      this.src = mkDetails("src", srcuser);
+      this.dst = mkDetails("dst", dstuser);
     }
   }
 
@@ -51,7 +49,7 @@ public class IMAPSyncAction implements Action
   private boolean closing = false;
   private Set<String> accountIds;
 
-  public IMAPSyncAction(Nexus n, int maxThreads, List<String> accountIds)
+  public IMAPSyncAction(Nexus n, int maxThreads, Set<String> accountIds)
   {
     this.n = n;
     this.maxThreads = maxThreads;
@@ -150,7 +148,7 @@ public class IMAPSyncAction implements Action
     for (AccountListLine all: al.values()) {
       if (accountIds != null && !accountIds.contains(all.canonicalUsername))
         continue;
-      CredentialPair cp = new CredentialPair(n, all.canonicalUsername,
+      CredentialPair cp = new CredentialPair(all.canonicalUsername,
         all.srcUsername, all.dstUsername);
       enqueueAccount(cp);
       i++;
@@ -170,7 +168,6 @@ public class IMAPSyncAction implements Action
     waitForSteadyStateEnd();
     Utils.closeQuietly(globalLog);
     Utils.closeQuietly(mts);
-    Utils.closeQuietly(af);
   }
 
   class SDHook extends Thread

@@ -6,6 +6,10 @@
   <name>imapmigr</name>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.sourceEncoding>UTF-8</project.reporting.sourceEncoding>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>com.google.code.gson</groupId>
